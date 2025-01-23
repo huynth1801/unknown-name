@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useTransition } from "react"
+import { useForm } from "react-hook-form"
 import {
   CardTitle,
   CardDescription,
@@ -9,10 +9,10 @@ import {
   CardContent,
   CardFooter,
   Card,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -20,20 +20,25 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import * as z from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@/components/ui/form"
+import * as z from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { Checkbox } from "@/components/ui/checkbox"
+import { LoginResponse } from "./(types)"
+import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   username: z.string().min(1, "Email or usename is required"),
   password: z.string().min(1, "Password is required"),
-});
+})
 
 const SignInPage = () => {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,12 +46,42 @@ const SignInPage = () => {
       username: "",
       password: "",
     },
-  });
+  })
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    startTransition(async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/api/auth/log-in`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        })
+
+        const data: LoginResponse = await response.json()
+
+        if (response.ok) {
+          // localStorage.setItem("accessToken", data.result.token)
+          console.log("After submit", isPending)
+          toast({
+            title: "Sign in successfully !",
+            variant: "success",
+            duration: 2000,
+          })
+        } else {
+          setError("An error occurred during sign in")
+        }
+      } catch (error) {
+        console.error("Error when signing in", error)
+      }
+    })
+  }
 
   return (
     <div className="w-full max-w-md">
       <Form {...form}>
-        <form>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="shadow-lg rounded-lg border border-gray-200">
             <CardHeader className="space-y-1">
               <CardTitle className="text-3xl font-bold">
@@ -114,15 +149,15 @@ const SignInPage = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button className="w-full" type="submit">
-                Sign In
+              <Button className="w-full" type="submit" disabled={isPending}>
+                {isPending ? "Signing In..." : "Sign In"}
               </Button>
             </CardFooter>
           </Card>
         </form>
       </Form>
     </div>
-  );
-};
+  )
+}
 
-export default SignInPage;
+export default SignInPage
