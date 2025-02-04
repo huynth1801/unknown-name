@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import React, { useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import {
   CardTitle,
@@ -23,10 +23,10 @@ import {
 } from "@/components/ui/form"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useRouter } from "next/navigation"
 import { Checkbox } from "@/components/ui/checkbox"
 import { LoginResponse } from "./(types)"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
   username: z.string().min(1, "Email or usename is required"),
@@ -35,9 +35,10 @@ const formSchema = z.object({
 
 const SignInPage = () => {
   const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
-  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [rememberMe, setRememberMe] = useState(false)
+  const router = useRouter()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -62,13 +63,13 @@ const SignInPage = () => {
         const data: LoginResponse = await response.json()
 
         if (response.ok) {
-          // localStorage.setItem("accessToken", data.result.token)
-          console.log("After submit", isPending)
+          localStorage.setItem("accessToken", data.result.token)
           toast({
             title: "Sign in successfully !",
             variant: "success",
             duration: 2000,
           })
+          // router.push("/")
         } else {
           setError("An error occurred during sign in")
         }
@@ -79,7 +80,7 @@ const SignInPage = () => {
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md dark:bg-black dark:text-white">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="shadow-lg rounded-lg border border-gray-200">
@@ -130,7 +131,11 @@ const SignInPage = () => {
               />
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" />
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked)}
+                  />
                   <label
                     htmlFor="remember"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

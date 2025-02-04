@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { NextRequest } from "next/server"
 
 // List of protected route
-const protectedRoutes: string[] = ["/profile", "/orders", "/"]
+const protectedRoutes: string[] = ["/profile", "/orders"]
 
 const publicRoutes: string[] = ["/sign-in", "/sign-up"]
 
@@ -14,6 +14,7 @@ export function middleware(request: NextRequest) {
 
   // Get token
   const token = request.cookies.get("refreshToken")?.value
+  console.log("token in middleware", token)
 
   // Redirect to /login if the user is not authenticated
   if (isProtectedRoute && !token) {
