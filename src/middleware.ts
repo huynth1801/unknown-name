@@ -13,7 +13,7 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path)
 
   // Get token
-  const token = request.cookies.get("refreshToken")?.value
+  const token = request.cookies.get("accessToken")?.value
   console.log("token in middleware", token)
 
   // Redirect to /login if the user is not authenticated

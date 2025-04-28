@@ -69,7 +69,7 @@ const SignInPage = () => {
             variant: "success",
             duration: 2000,
           })
-          // router.push("/")
+          router.push("/")
         } else {
           setError("An error occurred during sign in")
         }
@@ -134,7 +134,9 @@ const SignInPage = () => {
                   <Checkbox
                     id="remember"
                     checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked)}
+                    onCheckedChange={(checked: boolean) =>
+                      setRememberMe(checked)
+                    }
                   />
                   <label
                     htmlFor="remember"
