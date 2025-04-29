@@ -10,13 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -38,7 +32,7 @@ export default function Header() {
           href="/"
           className="text-2xl font-bold text-black dark:text-white"
         >
-          electro<span className="text-primary">.</span>
+          HuyNguyenRider<span className="text-primary">.</span>
         </Link>
 
         {/* Search Bar */}
