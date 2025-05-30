@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { LoginResponse } from "./(types)"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import ResourceURL from "@/constants/ResourceURL"
 
 const formSchema = z.object({
   username: z.string().min(1, "Email or usename is required"),
@@ -34,7 +35,7 @@ const formSchema = z.object({
 })
 
 const SignInPage = () => {
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+  // const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [rememberMe, setRememberMe] = useState(false)
@@ -52,7 +53,7 @@ const SignInPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
-        const response = await fetch(`${BASE_URL}/api/auth/log-in`, {
+        const response = await fetch(`${ResourceURL.LOGIN}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
