@@ -28,11 +28,18 @@ import {
 } from "@/components/ui/select"
 import { zodResolver } from "@hookform/resolvers/zod"
 import React, { useEffect, useState, useTransition } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 import { Eye, EyeOff, User, Mail, Phone, MapPin, UserCheck } from "lucide-react"
-import { getAllProvince } from "@/lib/api/province"
-import { IProvince } from "@/types/province-type"
+import { getAllDistricts, getAllProvince } from "@/lib/api/province"
+import { IDistrict, IProvince } from "@/types/province-type"
+import { useQuery } from "@tanstack/react-query"
+import { useRouter } from "next/navigation"
+import { useDistricts, useProvinces, useWards } from "@/hooks/use-province"
+import LoadingSelect from "@/components/loading/loading-select"
+import ApplicationConstants from "@/constants/ApplicationConstants"
+import { useDispatch } from "react-redux"
+import { setUserId } from "@/redux/slices/authSlice"
 
 const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -57,7 +64,8 @@ const RegisterPage = () => {
   const [isPending, startTransition] = useTransition()
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1)
-  const [provinces, setProvinces] = useState<IProvince[]>()
+  const router = useRouter()
+  const dispatch = useDispatch()
 
   const stepCreateAcc = [
     { num: 1, label: "Account Info" },
@@ -84,29 +92,75 @@ const RegisterPage = () => {
     },
   })
 
-  useEffect(() => {
-    const fetchProvinces = async () => {
-      try {
-        const res = await getAllProvince()
-        setProvinces(res)
-      } catch (error) {
-        console.error("Failed to fetch provinces:", error)
-      }
-    }
+  const watchedProvinceId = useWatch({
+    control: form.control,
+    name: "address.provinceId",
+  })
 
-    fetchProvinces()
-  }, [])
+  const watchedDistrictId = useWatch({
+    control: form.control,
+    name: "address.districtId",
+  })
+
+  // React Query hooks
+  const {
+    data: provinces = [],
+    isLoading: provincesLoading,
+    error: provincesError,
+  } = useProvinces()
+
+  const {
+    data: districts = [],
+    isLoading: districtsLoading,
+    error: districtsError,
+  } = useDistricts(watchedProvinceId || null)
+
+  const {
+    data: wards = [],
+    isLoading: wardsLoading,
+    error: wardsError,
+  } = useWards(watchedDistrictId || null)
+
+  // Handle province change - reset district và ward
+  const handleProvinceChange = (provinceId: string) => {
+    const id = parseInt(provinceId)
+    form.setValue("address.provinceId", id)
+    form.setValue("address.districtId", 0) // Reset district
+    form.setValue("address.wardId", 0) // Reset ward
+  }
+
+  // Handle district change - reset ward
+  const handleDistrictChange = (districtId: string) => {
+    const id = parseInt(districtId)
+    form.setValue("address.districtId", id)
+    form.setValue("address.wardId", 0)
+  }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setError(null)
+    console.log("Form values", values)
     startTransition(async () => {
       try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        console.log("Form submitted:", values)
-        alert("Account created successfully!")
+        const response = await fetch(`${ApplicationConstants}/auth/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          setError(data?.message || "An error occurred during sign up")
+          return
+        }
+
+        dispatch(setUserId(data.userId))
+        router.push("/confirm-token")
       } catch (error) {
-        console.error("Error when signing up", error)
         setError("An error occurred during sign up")
+        console.error("Error when signing up", error)
       }
     })
   }
@@ -399,14 +453,17 @@ const RegisterPage = () => {
                             </FormLabel>
                             <FormControl>
                               <Select
-                                value={field.value?.toString()}
-                                onValueChange={(value) =>
-                                  field.onChange(parseInt(value))
-                                }
+                                value={field.value?.toString() || ""}
+                                onValueChange={handleProvinceChange}
+                                disabled={provincesLoading}
                               >
-                                <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200">
-                                  <SelectValue placeholder="Province" />
-                                </SelectTrigger>
+                                {provincesLoading ? (
+                                  <LoadingSelect placeholder="Loading provinces..." />
+                                ) : (
+                                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200">
+                                    <SelectValue placeholder="Select Province" />
+                                  </SelectTrigger>
+                                )}
                                 <SelectContent>
                                   <SelectGroup>
                                     {provinces?.map((province) => (
@@ -435,15 +492,39 @@ const RegisterPage = () => {
                               District
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="District ID"
-                                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value))
+                              <Select
+                                value={field.value?.toString() || ""}
+                                onValueChange={handleDistrictChange}
+                                disabled={
+                                  districtsLoading || !watchedProvinceId
                                 }
-                              />
+                              >
+                                {districtsLoading ? (
+                                  <LoadingSelect placeholder="Loading districts..." />
+                                ) : (
+                                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200">
+                                    <SelectValue
+                                      placeholder={
+                                        !watchedProvinceId
+                                          ? "Select province first"
+                                          : "Select District"
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                )}
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {districts?.map((district) => (
+                                      <SelectItem
+                                        key={district.district_id}
+                                        value={district.district_id.toString()}
+                                      >
+                                        {district.district_name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -459,15 +540,39 @@ const RegisterPage = () => {
                               Ward
                             </FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="Ward ID"
-                                className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(parseInt(e.target.value))
+                              <Select
+                                value={field.value?.toString() || ""}
+                                onValueChange={(value) =>
+                                  field.onChange(parseInt(value))
                                 }
-                              />
+                                disabled={wardsLoading || !watchedDistrictId}
+                              >
+                                {wardsLoading ? (
+                                  <LoadingSelect placeholder="Loading wards..." />
+                                ) : (
+                                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-200">
+                                    <SelectValue
+                                      placeholder={
+                                        !watchedDistrictId
+                                          ? "Select district first"
+                                          : "Select Ward"
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                )}
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {wards?.map((ward) => (
+                                      <SelectItem
+                                        key={ward.ward_id}
+                                        value={ward.ward_id.toString()}
+                                      >
+                                        {ward.ward_name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
