@@ -27,13 +27,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { zodResolver } from "@hookform/resolvers/zod"
-import React, { useEffect, useState, useTransition } from "react"
+import React, { useState, useTransition } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 import { Eye, EyeOff, User, Mail, Phone, MapPin, UserCheck } from "lucide-react"
-import { getAllDistricts, getAllProvince } from "@/lib/api/province"
-import { IDistrict, IProvince } from "@/types/province-type"
-import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useDistricts, useProvinces, useWards } from "@/hooks/use-province"
 import LoadingSelect from "@/components/loading/loading-select"
@@ -141,13 +138,16 @@ const RegisterPage = () => {
     console.log("Form values", values)
     startTransition(async () => {
       try {
-        const response = await fetch(`${ApplicationConstants}/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
-        })
+        const response = await fetch(
+          `${ApplicationConstants.API_PATH}/auth/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(values),
+          }
+        )
 
         const data = await response.json()
 
