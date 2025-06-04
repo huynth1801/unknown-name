@@ -37,6 +37,7 @@ import LoadingSelect from "@/components/loading/loading-select"
 import ApplicationConstants from "@/constants/ApplicationConstants"
 import { useDispatch } from "react-redux"
 import { setUserId } from "@/redux/slices/authSlice"
+import ResourceURL from "@/constants/ResourceURL"
 
 const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -138,16 +139,13 @@ const RegisterPage = () => {
     console.log("Form values", values)
     startTransition(async () => {
       try {
-        const response = await fetch(
-          `${ApplicationConstants.API_PATH}/auth/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(values),
-          }
-        )
+        const response = await fetch(ResourceURL.SIGN_UP, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        })
 
         const data = await response.json()
 
@@ -155,7 +153,7 @@ const RegisterPage = () => {
           setError(data?.message || "An error occurred during sign up")
           return
         }
-
+        localStorage.setItem(ApplicationConstants.REGISTER_USER_ID, data.userId)
         dispatch(setUserId(data.userId))
         router.push("/confirm-token")
       } catch (error) {
@@ -182,7 +180,11 @@ const RegisterPage = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 flex items-center justify-center p-4">
+    <div
+      className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 
+                  dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900 
+                    flex items-center justify-center p-4"
+    >
       <div className="w-full max-w-2xl">
         {/* Progress indicator */}
         <div className="mb-8">

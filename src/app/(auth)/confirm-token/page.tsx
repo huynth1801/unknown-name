@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import ApplicationConstants from "@/constants/ApplicationConstants"
+import ResourceURL from "@/constants/ResourceURL"
 import { useToast } from "@/hooks/use-toast"
 import { RootState } from "@/redux/store"
 import { ArrowLeft, Mail } from "lucide-react"
@@ -41,20 +42,19 @@ const VerifyTokenPage = () => {
   const { toast } = useToast()
   const router = useRouter()
 
-  const userId = useSelector((state: RootState) => state.auth.userId)
+  const userId =
+    useSelector((state: RootState) => state.auth.userId) ??
+    localStorage.getItem(ApplicationConstants.REGISTER_USER_ID)
 
   const handleVerify = async () => {
     setIsPending(true)
     setMessage(null)
     try {
-      const response = await fetch(
-        `${ApplicationConstants.API_PATH}/auth/registration/confirm`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: token, userId: userId }),
-        }
-      )
+      const response = await fetch(ResourceURL.CONFIRM_TOKEN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: token, userId: userId }),
+      })
       const data = await response.json()
       if (response.ok) {
         toast({
@@ -82,11 +82,10 @@ const VerifyTokenPage = () => {
   const handleResendToken = async () => {
     try {
       await fetch(
-        `${ApplicationConstants.API_PATH}/auth/registration/resend-token`,
+        `${ApplicationConstants.API_PATH}/auth/registration/${userId}/resend-token`,
         {
-          method: "POST",
+          method: "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
         }
       )
       toast({

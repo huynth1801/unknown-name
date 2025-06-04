@@ -1,7 +1,6 @@
 export type LoginResponse = {
-  code: number
-  result: {
-    token: string
-    authenticated: boolean
-  }
+  message: string;
+  token: string;
+  refreshToken: string;
+  createdAt: string;
 }
